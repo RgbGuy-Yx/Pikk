@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+python-dotenv
+groq
+sarvamai
+cloudinary
+qrcode
+weasyprint
+requests
