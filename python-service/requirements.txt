@@ -7,3 +7,4 @@ cloudinary
 qrcode
 weasyprint
 requests
+python-multipart

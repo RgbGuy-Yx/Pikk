@@ -1,0 +1,58 @@
+[
+  {
+    "id": 1,
+    "name": "atta",
+    "price": 45,
+    "stock_quantity": 100,
+    "reorder_level": 20,
+    "unit": "kg"
+  },
+  {
+    "id": 2,
+    "name": "oil",
+    "price": 150,
+    "stock_quantity": 50,
+    "reorder_level": 10,
+    "unit": "litre"
+  },
+  {
+    "id": 3,
+    "name": "milk",
+    "price": 60,
+    "stock_quantity": 40,
+    "reorder_level": 10,
+    "unit": "litre"
+  },
+  {
+    "id": 4,
+    "name": "sugar",
+    "price": 40,
+    "stock_quantity": 80,
+    "reorder_level": 15,
+    "unit": "kg"
+  },
+  {
+    "id": 5,
+    "name": "potato",
+    "price": 25,
+    "stock_quantity": 150,
+    "reorder_level": 30,
+    "unit": "kg"
+  },
+  {
+    "id": 6,
+    "name": "daal",
+    "price": 120,
+    "stock_quantity": 10.5,
+    "reorder_level": 12,
+    "unit": "kg"
+  },
+  {
+    "id": 7,
+    "name": "bread",
+    "price": 40,
+    "stock_quantity": 5,
+    "reorder_level": 8,
+    "unit": "piece"
+  }
+]
