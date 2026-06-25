@@ -1,12 +1,11 @@
 from fastapi import APIRouter, Body
-from services.groqService import parse_order_text
-from schemas.orderSchema import ParseResult
+from services.groqService import route_intent
+from schemas.orderSchema import IntentResult
 
 router = APIRouter(tags=['parse'])
 
-
-@router.post('/parse-order', response_model=ParseResult)
-def parse_order(payload: dict = Body(default={})): 
+@router.post('/intent', response_model=IntentResult)
+def parse_intent(payload: dict = Body(default={})): 
     text = payload.get("text", "")
-    result = parse_order_text(text)
+    result = route_intent(text)
     return result

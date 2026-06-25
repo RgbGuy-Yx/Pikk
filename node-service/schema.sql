@@ -61,3 +61,11 @@ INSERT INTO products (name, price, stock_quantity, reorder_level, unit) VALUES
 -- Seed Mock Customer for Webhook Testing
 INSERT INTO customers (phone, name) VALUES
 ('919876543210', 'Yuvraj');
+
+-- 5. Chat Sessions Table (for Conversational AI Memory)
+CREATE TABLE IF NOT EXISTS chat_sessions (
+  customer_phone TEXT PRIMARY KEY REFERENCES customers(phone) ON DELETE CASCADE,
+  history JSONB NOT NULL DEFAULT '[]',
+  cart JSONB NOT NULL DEFAULT '[]',
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);

@@ -15,17 +15,17 @@ function createPythonServiceClient() {
 
   return {
     /**
-     * Sends natural language text to the Python service for parsing.
+     * Sends natural language text to the Python service for intent classification.
      * @param {string} text - The message from WhatsApp.
-     * @returns {Promise<Object>} - The parsed order or non_order intent.
+     * @returns {Promise<Object>} - The parsed intent result.
      */
-    async parseOrder(text) {
+    async parseIntent(text) {
       try {
-        const response = await client.post('/api/parse-order', { text });
+        const response = await client.post('/api/intent', { text });
         return response.data;
       } catch (error) {
-        console.error('[pythonClient] parseOrder error:', error.response?.data || error.message);
-        return { intent: 'non_order', items: [] };
+        console.error('[pythonClient] parseIntent error:', error.response?.data || error.message);
+        return { intent: 'greeting', data: {} };
       }
     },
 
