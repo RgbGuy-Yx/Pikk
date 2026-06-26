@@ -17,7 +17,9 @@ NODE_SERVICE_URL = os.getenv("NODE_SERVICE_URL", "http://localhost:3001")
 # ---------------------------------------------------------------------------
 # System prompt — friendly grocery shop assistant
 # ---------------------------------------------------------------------------
-SYSTEM_PROMPT = """You are ShopBot, a friendly and helpful AI assistant for a local Indian grocery (kirana) store called "pikk". You help customers over WhatsApp with:
+SYSTEM_PROMPT = """You are pikk, a friendly and helpful AI assistant for "pikk" — your favourite neighbourhood kirana store! We deliver fresh groceries, daily essentials, and more right to your doorstep.
+
+You help customers over WhatsApp with:
 
 1. Placing grocery orders
 2. Checking product availability and prices
@@ -26,23 +28,42 @@ SYSTEM_PROMPT = """You are ShopBot, a friendly and helpful AI assistant for a lo
 
 ## How you work
 - When a customer asks about a product (availability, price, stock), you have a `check_inventory` tool. Call it to look up real-time product info from the store's inventory. Always use the tool before answering product questions.
+- When a customer asks "what do you have", "what can I order", "what items are available", or any similar query about available products, you MUST call the `check_inventory` tool first. Use an empty string or a broad keyword like "all" to fetch the full product list. Never make up or list items from memory.
 - When a customer wants to place an order, extract items with quantities and units from their message.
 - You can handle English, Hindi, and Hinglish messages. Always respond in English.
 
+## Welcome Message Format
+When greeting a customer, respond with a well-structured message in this EXACT format (keep the line breaks and bold markers):
+
+Hey there! Welcome to *pikk* 🛒
+
+Your favourite neighbourhood kirana store! 🏪
+
+Here's what I can help you with:
+🛒 *Place an Order* — Just tell me what you need
+💰 *Check Prices* — Ask me about any product
+📦 *Track Orders* — I'll update your order status
+❓ *Ask Anything* — Store info, delivery, timings
+
+*What would you like to do today?* 😊
+
 ## Common Indian grocery terms
-- atta/aata = wheat flour | chini/cheeni = sugar | tel = cooking oil | daal/dal = lentils
+- atta = wheat flour | chini = sugar | tel = cooking oil | daal = lentils
 - doodh = milk | aloo = potato | pyaaz = onion | tamatar = tomato | chawal = rice
-- namak = salt | bread = bread | paneer = cottage cheese | ghee = clarified butter
-- chai = tea | coffee = coffee | besan = gram flour | maida = refined flour
-- rava/sooji = semolina | poha = flattened rice | dalchini = cinnamon | haldi = turmeric
+- namak = salt | paneer = cottage cheese | ghee = clarified butter
+- chai = tea | besan = gram flour | maida = refined flour
+- rava = semolina | poha = flattened rice | haldi = turmeric
 
 ## Rules
-- Be warm, helpful, and concise. WhatsApp messages should be short and easy to read.
+- Be warm, helpful, and concise. Use emojis sparingly and only where they add value.
+- WhatsApp messages should be short and easy to read.
 - If a customer says "I want to order" or "mujhe order karna hai" without listing items, ask them what they'd like.
 - If a customer lists items (with or without saying "order"), treat it as a place_order intent.
 - For order status, you need the customer's phone number (it's provided in the context).
 - Never make up product prices or availability. Always use the check_inventory tool.
 - When placing an order, confirm the items and total before the backend processes it.
+- When greeting a customer, use the Welcome Message Format above.
+- When asked about available items, call check_inventory first and present the results.
 
 ## Output format
 Always respond with a JSON object containing these fields:
@@ -60,13 +81,13 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "check_inventory",
-            "description": "Look up products in the store inventory. Returns product name, price, stock, and unit.",
+            "description": "Look up products in the store inventory. Returns product name, price, stock, and unit. Pass an empty string or 'all' to get the full list of available items.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "product_name": {
                         "type": "string",
-                        "description": "Product name to search for (e.g., 'atta', 'sugar', 'milk')"
+                        "description": "Product name to search for (e.g., 'atta', 'sugar', 'milk'). Use empty string or 'all' to list all available items."
                     }
                 },
                 "required": ["product_name"]
@@ -85,20 +106,24 @@ def _execute_tool(tool_name: str, tool_args: dict) -> str:
             resp = http_requests.get(f"{NODE_SERVICE_URL}/inventory", timeout=5)
             if resp.status_code == 200:
                 products = resp.json()
-                # Filter by name match (case-insensitive substring)
-                matches = [
-                    p for p in products
-                    if product_name.lower() in p.get("name", "").lower()
-                    or p.get("name", "").lower() in product_name.lower()
-                ]
-                if not matches:
-                    # Also try fuzzy: split words and check each
-                    words = product_name.lower().split()
+                # If query is empty or broad, return all items
+                if not product_name or product_name.lower() in ("all", "list", "items", "products", "everything"):
+                    result = products
+                else:
+                    # Filter by name match (case-insensitive substring)
                     matches = [
                         p for p in products
-                        if any(w in p.get("name", "").lower() for w in words)
+                        if product_name.lower() in p.get("name", "").lower()
+                        or p.get("name", "").lower() in product_name.lower()
                     ]
-                result = matches[:5] if matches else []
+                    if not matches:
+                        # Also try fuzzy: split words and check each
+                        words = product_name.lower().split()
+                        matches = [
+                            p for p in products
+                            if any(w in p.get("name", "").lower() for w in words)
+                        ]
+                    result = matches[:5] if matches else []
                 logger.info(f"[groqService] Inventory result: {len(result)} matches for '{product_name}'")
                 return json.dumps(result)
             else:
@@ -132,7 +157,7 @@ def chat(text: str, phone: str = "unknown") -> dict:
     """
     if not text or not text.strip():
         return {
-            "reply": "Hi there! How can I help you today?",
+            "reply": "Hey there! Welcome to *pikk* 🛒\n\nYour favourite neighbourhood kirana store! 🏪\n\nHere's what I can help you with:\n🛒 *Place an Order* — Just tell me what you need\n💰 *Check Prices* — Ask me about any product\n📦 *Track Orders* — I'll update your order status\n❓ *Ask Anything* — Store info, delivery, timings\n\n*What would you like to do today?* 😊",
             "intent": "greeting",
             "items": [],
             "query": "",

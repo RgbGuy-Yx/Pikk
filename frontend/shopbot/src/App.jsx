@@ -3,7 +3,8 @@ import {
   LayoutDashboard, Package, ShoppingCart, Users, RefreshCw,
   Search, Plus, Pencil, Trash2, X, AlertTriangle, TrendingUp,
   IndianRupee, Boxes, UserCheck, Bell, ChevronRight, PackageCheck,
-  Truck, CircleCheck, CircleX, Clock, PackageOpen, Loader2, ArrowUpRight
+  Truck, CircleCheck, CircleX, Clock, PackageOpen, Loader2, ArrowUpRight,
+  CircleAlert
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -70,6 +71,41 @@ function App() {
   const [newProduct, setNewProduct] = useState({ name: '', price: '', stock_quantity: '', reorder_level: '', unit: 'piece' });
   const [orderFilter, setOrderFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  const fetchNotifications = async () => {
+    try {
+      const res = await fetch(`${API_URL}/notifications`);
+      if (res.ok) {
+        const data = await res.json();
+        setNotifications(data.notifications);
+        setUnreadCount(data.unreadCount);
+      }
+    } catch {
+      // Notifications unavailable in offline mode
+    }
+  };
+
+  const markNotificationRead = async (id) => {
+    try {
+      await fetch(`${API_URL}/notifications/${id}/read`, { method: 'PUT' });
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch {
+      // Ignore errors
+    }
+  };
+
+  const clearReadNotifications = async () => {
+    try {
+      await fetch(`${API_URL}/notifications/read`, { method: 'DELETE' });
+      setNotifications(prev => prev.filter(n => !n.read));
+    } catch {
+      // Ignore errors
+    }
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -83,6 +119,7 @@ function App() {
         setOrders(await ordersRes.json());
         setInventory(await inventoryRes.json());
         setAnalytics(await analyticsRes.json());
+        fetchNotifications();
       } else {
         setConnectionMode('Offline');
         setOrders(MOCK_ORDERS); setInventory(MOCK_INVENTORY); setAnalytics(MOCK_ANALYTICS);
@@ -94,6 +131,17 @@ function App() {
   };
 
   useEffect(() => { fetchData(); }, []);
+
+  useEffect(() => {
+    if (!showNotifications) return;
+    const handler = (e) => {
+      if (!e.target.closest('.notification-wrapper')) {
+        setShowNotifications(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showNotifications]);
 
   const handleUpdateStatus = async (orderId, newStatus) => {
     try {
@@ -199,7 +247,48 @@ function App() {
       <main className="main">
         <header className="topbar">
           <h1 className="page-title">{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}</h1>
-          <button className="btn-icon" onClick={fetchData} title="Refresh"><RefreshCw size={14} /></button>
+          <div className="topbar-actions">
+            <div className="notification-wrapper">
+              <button className="btn-icon" onClick={() => setShowNotifications(prev => !prev)} title="Notifications">
+                <Bell size={14} />
+                {unreadCount > 0 && <span className="notif-badge">{unreadCount}</span>}
+              </button>
+              {showNotifications && (
+                <div className="notif-panel">
+                  <div className="notif-header">
+                    <span className="notif-title">Notifications</span>
+                    {notifications.some(n => n.read) && (
+                      <button className="notif-clear" onClick={clearReadNotifications}>Clear read</button>
+                    )}
+                  </div>
+                  <div className="notif-list">
+                    {notifications.length === 0 ? (
+                      <div className="notif-empty">No notifications</div>
+                    ) : (
+                      notifications.map(n => (
+                        <div
+                          key={n.id}
+                          className={`notif-item ${n.read ? '' : 'unread'} ${n.type}`}
+                          onClick={() => !n.read && markNotificationRead(n.id)}
+                        >
+                          <div className="notif-icon">
+                            {n.type === 'out_of_stock' && <CircleX size={14} />}
+                            {n.type === 'low_stock' && <AlertTriangle size={14} />}
+                            {n.type === 'order_alert' && <CircleAlert size={14} />}
+                          </div>
+                          <div className="notif-content">
+                            <span className="notif-msg">{n.message}</span>
+                            <span className="notif-time">{new Date(n.createdAt).toLocaleTimeString()}</span>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+            <button className="btn-icon" onClick={fetchData} title="Refresh"><RefreshCw size={14} /></button>
+          </div>
         </header>
 
         {loading ? (

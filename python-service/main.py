@@ -5,11 +5,10 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from routes.parse import router as parse_router
 from routes.transcribe import router as transcribe_router
-from routes.invoice import generate_invoice, router as invoice_router
 
 load_dotenv()
 
-app = FastAPI(title=os.getenv('APP_NAME', 'ShopBot Python Service'))
+app = FastAPI(title=os.getenv('APP_NAME', 'pikk Python Service'))
 
 frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:5173')
 allowed_origins = [origin.strip() for origin in frontend_url.split(',') if origin.strip()]
@@ -24,8 +23,6 @@ app.add_middleware(
 
 app.include_router(parse_router, prefix='/api')
 app.include_router(transcribe_router, prefix='/api')
-app.include_router(invoice_router, prefix='/api')
-app.post('/generate-invoice')(generate_invoice)
 
 
 @app.get('/health')

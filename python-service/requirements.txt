@@ -3,7 +3,5 @@ uvicorn[standard]
 python-dotenv
 groq
 sarvamai
-cloudinary
-weasyprint
 requests
 python-multipart

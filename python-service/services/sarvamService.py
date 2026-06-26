@@ -110,8 +110,8 @@ def transcribe_audio_file(file_path: str) -> str:
     logger.info("Running in local mock transcription mode.")
     filename = os.path.basename(file_path).lower()
     mock_transcripts = {
-        "greeting": "namaste shopbot, kaise ho?",
-        "hello": "namaste shopbot, kaise ho?",
+        "greeting": "namaste pikk, kaise ho?",
+        "hello": "namaste pikk, kaise ho?",
         "help": "help me with my order",
         "bread": "10 bread and 5kg daal",
         "daal": "10 bread and 5kg daal",

@@ -1,7 +1,7 @@
 {
   "name": "shopbot-node-service",
   "version": "1.0.0",
-  "description": "Express service for ShopBot",
+  "description": "Express service for pikk",
   "main": "server.js",
   "type": "commonjs",
   "scripts": {

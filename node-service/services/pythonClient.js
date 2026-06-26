@@ -63,23 +63,6 @@ function createPythonServiceClient() {
       }
     },
 
-    /**
-     * Requests PDF invoice and UPI QR generation from the Python service.
-     * @param {Object} invoicePayload - Order, customer, items, and payment data.
-     * @returns {Promise<Object>} - Invoice asset URLs or an error object.
-     */
-    async generateInvoice(invoicePayload) {
-      try {
-        const response = await client.post('/generate-invoice', invoicePayload, {
-          timeout: Number(process.env.PYTHON_INVOICE_TIMEOUT_MS) || 45000,
-        });
-        return response.data;
-      } catch (error) {
-        const errMsg = error.response?.data?.detail || error.message;
-        console.error('[pythonClient] generateInvoice error:', errMsg);
-        return { ok: false, error: errMsg };
-      }
-    }
   };
 }
 

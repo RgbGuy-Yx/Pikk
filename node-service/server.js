@@ -7,6 +7,7 @@ const webhookRoutes = require('./routes/webhook');
 const ordersRoutes = require('./routes/orders');
 const inventoryRoutes = require('./routes/inventory');
 const analyticsRoutes = require('./routes/analytics');
+const notificationsRoutes = require('./routes/notifications');
 const { createSupabaseClient } = require('./services/supabase');
 
 const app = express();
@@ -34,6 +35,7 @@ app.use('/webhook', webhookRoutes);
 app.use('/orders', ordersRoutes);
 app.use('/inventory', inventoryRoutes);
 app.use('/analytics', analyticsRoutes);
+app.use('/notifications', notificationsRoutes);
 
 app.use((req, res) => {
   res.status(404).json({

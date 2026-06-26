@@ -1,13 +1,8 @@
 const { createSupabaseClient } = require('./supabase');
-const { createPythonServiceClient } = require('./pythonClient');
-const {
-  sendWhatsAppDocument,
-  sendWhatsAppImage,
-  sendWhatsAppMessage,
-} = require('./whatsapp');
+const { sendWhatsAppMessage } = require('./whatsapp');
+const { addNotification } = require('./notificationStore');
 
 const supabase = createSupabaseClient();
-const pythonClient = createPythonServiceClient();
 
 /**
  * Service to orchestrate business logic for processing user orders.
@@ -123,7 +118,7 @@ class OrderService {
           outOfStockAlerts += `\n❌ *Not Available:* \n` + notFoundItems.map(i => `- ${i.name} (does not exist in our shop)`).join('\n');
         }
 
-        const failureReply = `🛒 *Order Alert - ShopBot*\n\nSorry, we could not place your order because the items are unavailable:\n${outOfStockAlerts}\n\nPlease try again with different items or quantities! 🙏`;
+        const failureReply = `🛒 *Order Alert - pikk*\n\nSorry, we could not place your order because the items are unavailable:\n${outOfStockAlerts}\n\nPlease try again with different items or quantities! 🙏`;
         await sendWhatsAppMessage(cleanPhone, failureReply);
 
         return {
@@ -168,7 +163,6 @@ class OrderService {
 
       // Step F: Stock Deduction & Reorder Checks
       console.log('[OrderService] Order registered. Commencing stock deduction...');
-      const reorderAlerts = [];
 
       for (const item of validItems) {
         const remainingStock = Number(item.product.stock_quantity) - item.quantity;
@@ -178,14 +172,39 @@ class OrderService {
           .update({ stock_quantity: remainingStock })
           .eq('id', item.product.id);
 
-        if (remainingStock <= Number(item.product.reorder_level)) {
-          reorderAlerts.push({
-            name: item.product.name,
-            currentStock: remainingStock,
-            reorderLevel: Number(item.product.reorder_level),
-            unit: item.product.unit
-          });
+        if (remainingStock === 0) {
+          console.log(`[OrderService] OUT OF STOCK alert for "${item.product.name}"`);
+          addNotification(
+            'out_of_stock',
+            `${item.product.name} is now out of stock`,
+            { id: item.product.id, name: item.product.name, stock: 0, unit: item.product.unit }
+          );
+        } else if (remainingStock <= Number(item.product.reorder_level)) {
+          console.log(`[OrderService] LOW STOCK alert for "${item.product.name}" (${remainingStock} ${item.product.unit})`);
+          addNotification(
+            'low_stock',
+            `${item.product.name} is low on stock: ${remainingStock} ${item.product.unit} remaining (reorder at ${item.product.reorder_level})`,
+            { id: item.product.id, name: item.product.name, stock: remainingStock, reorderLevel: Number(item.product.reorder_level), unit: item.product.unit }
+          );
         }
+      }
+
+      if (outOfStockItems.length > 0) {
+        const names = outOfStockItems.map(i => i.name).join(', ');
+        addNotification(
+          'order_alert',
+          `Order #${order.id}: ${names} excluded — requested quantity exceeds available stock`,
+          null
+        );
+      }
+
+      if (notFoundItems.length > 0) {
+        const names = notFoundItems.map(i => i.name).join(', ');
+        addNotification(
+          'order_alert',
+          `Order #${order.id}: ${names} not found in catalog`,
+          null
+        );
       }
 
       // Step G: Dispatch Customer Receipt Confirmation
@@ -217,70 +236,16 @@ Ham aapko notify karenge jab order delivery ke liye nikalega! 🛵`;
 
       await sendWhatsAppMessage(cleanPhone, receiptMessage);
 
-      // Step G2: Generate and send invoice/payment assets.
-      let invoiceResult = null;
-      try {
-        const invoicePayload = {
-          order: {
-            id: order.id,
-            total_amount: totalAmount,
-            status: order.status,
-            created_at: order.created_at
-          },
-          customer: {
-            phone: cleanPhone,
-            name: cleanName
-          },
-          items: validItems.map(item => ({
-            name: item.product.name,
-            quantity: item.quantity,
-            unit: item.product.unit,
-            unit_price: item.unit_price,
-            line_total: item.line_total
-          })),
-          payment: {
-            status: 'unpaid'
-          }
-        };
-
-        console.log(`[OrderService] Requesting invoice assets for order #${order.id}...`);
-        invoiceResult = await pythonClient.generateInvoice(invoicePayload);
-
-        if (invoiceResult?.ok && invoiceResult.invoice_url && invoiceResult.qr_url) {
-          await sendWhatsAppDocument(
-            cleanPhone,
-            invoiceResult.invoice_url,
-            `shopbot-invoice-${order.id}.pdf`,
-            `Invoice for ShopBot order #${order.id}`
-          );
-          await sendWhatsAppImage(
-            cleanPhone,
-            invoiceResult.qr_url,
-            `Scan to pay Rs. ${totalAmount.toFixed(2)} for ShopBot order #${order.id}`
-          );
-          console.log(`[OrderService] Invoice and QR sent for order #${order.id}.`);
-        } else {
-          throw new Error(invoiceResult?.error || 'Invoice service returned no asset URLs');
-        }
-      } catch (invoiceError) {
-        console.error(`[OrderService] Invoice flow failed for order #${order.id}:`, invoiceError.message);
-        await sendWhatsAppMessage(
-          cleanPhone,
-          `Your order #${order.id} is confirmed, but invoice/payment QR generation is delayed.`
-        );
-      }
-
       return {
         success: true,
         orderId: order.id,
         totalAmount,
-        validItemsCount: validItems.length,
-        invoice: invoiceResult
+        validItemsCount: validItems.length
       };
 
     } catch (err) {
       console.error('[OrderService] Transaction flow crashed:', err.message);
-      const systemErrorMsg = `⚠️ *ShopBot System Alert*\n\nSorry, we encountered a technical issue while processing your order. Please try again.`;
+      const systemErrorMsg = `⚠️ *pikk System Alert*\n\nSorry, we encountered a technical issue while processing your order. Please try again.`;
       await sendWhatsAppMessage(cleanPhone, systemErrorMsg);
       return { success: false, error: err.message };
     }
