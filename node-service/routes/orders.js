@@ -1,5 +1,6 @@
 const express = require('express');
 const { createSupabaseClient } = require('../services/supabase');
+const { sendWhatsAppMessage } = require('../services/whatsapp');
 
 const router = express.Router();
 const supabase = createSupabaseClient();
@@ -29,7 +30,7 @@ router.get('/', async (req, res, next) => {
   }
 });
 
-// Update order status
+// Update order status and notify customer
 router.put('/:id/status', async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -43,6 +44,13 @@ router.put('/:id/status', async (req, res, next) => {
       return res.status(500).json({ error: 'Database unavailable' });
     }
 
+    // Fetch order with customer info before updating
+    const { data: order } = await supabase
+      .from('orders')
+      .select('*, customers(name, phone)')
+      .eq('id', id)
+      .single();
+
     const { data, error } = await supabase
       .from('orders')
       .update({ status })
@@ -51,6 +59,28 @@ router.put('/:id/status', async (req, res, next) => {
       .single();
 
     if (error) throw error;
+
+    // Notify customer via WhatsApp
+    if (order?.customers?.phone) {
+      const phone = order.customers.phone;
+      const name = order.customers.name || 'there';
+      const orderId = order.id;
+
+      const messages = {
+        pending: `Hi ${name}! Your order #${orderId} has been received and is pending.`,
+        confirmed: `Hi ${name}! Your order #${orderId} has been confirmed. We're preparing it now.`,
+        packaged: `Hi ${name}! Your order #${orderId} has been packaged and is ready for delivery.`,
+        shipped: `Hi ${name}! Your order #${orderId} has been shipped and is on its way to you.`,
+        delivered: `Hi ${name}! Your order #${orderId} has been delivered. Thank you for shopping with us!`,
+        cancelled: `Hi ${name}, your order #${orderId} has been cancelled. Please contact us if you have any questions.`,
+      };
+
+      const msg = messages[status];
+      if (msg) {
+        await sendWhatsAppMessage(phone, msg);
+      }
+    }
+
     res.json(data);
   } catch (err) {
     next(err);

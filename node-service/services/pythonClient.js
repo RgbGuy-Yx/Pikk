@@ -17,15 +17,16 @@ function createPythonServiceClient() {
     /**
      * Sends natural language text to the Python service for intent classification.
      * @param {string} text - The message from WhatsApp.
+     * @param {string} [phone] - Customer phone for logging/context.
      * @returns {Promise<Object>} - The parsed intent result.
      */
-    async parseIntent(text) {
+    async parseIntent(text, phone) {
       try {
-        const response = await client.post('/api/intent', { text });
+        const response = await client.post('/api/intent', { text, phone: phone || 'unknown' }, { timeout: 45000 });
         return response.data;
       } catch (error) {
         console.error('[pythonClient] parseIntent error:', error.response?.data || error.message);
-        return { intent: 'greeting', data: {} };
+        return { reply: 'Sorry, I had trouble processing that. Please try again.', intent: 'greeting', items: [], query: '' };
       }
     },
 
@@ -59,6 +60,24 @@ function createPythonServiceClient() {
         const errMsg = error.response?.data?.detail || error.message;
         console.error('[pythonClient] transcribeAudio error:', errMsg);
         return { ok: false, transcript: '', error: errMsg };
+      }
+    },
+
+    /**
+     * Requests PDF invoice and UPI QR generation from the Python service.
+     * @param {Object} invoicePayload - Order, customer, items, and payment data.
+     * @returns {Promise<Object>} - Invoice asset URLs or an error object.
+     */
+    async generateInvoice(invoicePayload) {
+      try {
+        const response = await client.post('/generate-invoice', invoicePayload, {
+          timeout: Number(process.env.PYTHON_INVOICE_TIMEOUT_MS) || 45000,
+        });
+        return response.data;
+      } catch (error) {
+        const errMsg = error.response?.data?.detail || error.message;
+        console.error('[pythonClient] generateInvoice error:', errMsg);
+        return { ok: false, error: errMsg };
       }
     }
   };

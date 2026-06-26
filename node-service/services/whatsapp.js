@@ -77,6 +77,76 @@ async function sendWhatsAppMessage(toOrPayload, text) {
   }
 }
 
+async function sendWhatsAppDocument(to, documentUrl, filename, caption) {
+  const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
+  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+  const payload = {
+    messaging_product: 'whatsapp',
+    recipient_type: 'individual',
+    to,
+    type: 'document',
+    document: {
+      link: documentUrl,
+      filename: filename || 'invoice.pdf',
+      caption: caption || ''
+    }
+  };
+
+  if (!accessToken || !phoneNumberId) {
+    console.log('\n========================================');
+    console.log('[WhatsApp MOCK Document Send]');
+    console.log(`To:       ${to}`);
+    console.log(`Document: ${documentUrl}`);
+    console.log(`Filename: ${payload.document.filename}`);
+    console.log(`Caption:  ${payload.document.caption}`);
+    console.log('========================================\n');
+    return { ok: true, mocked: true, recipient: to, documentUrl };
+  }
+
+  try {
+    console.log(`[WhatsApp] Sending invoice document to ${to}...`);
+    const response = await whatsappClient.post('/messages', payload);
+    return { ok: true, mocked: false, messageId: response.data?.messages?.[0]?.id };
+  } catch (error) {
+    console.error(`[WhatsApp] Failed to send document to ${to}:`, error.response?.data || error.message);
+    return { ok: false, error: error.response?.data || error.message };
+  }
+}
+
+async function sendWhatsAppImage(to, imageUrl, caption) {
+  const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
+  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+  const payload = {
+    messaging_product: 'whatsapp',
+    recipient_type: 'individual',
+    to,
+    type: 'image',
+    image: {
+      link: imageUrl,
+      caption: caption || ''
+    }
+  };
+
+  if (!accessToken || !phoneNumberId) {
+    console.log('\n========================================');
+    console.log('[WhatsApp MOCK Image Send]');
+    console.log(`To:      ${to}`);
+    console.log(`Image:   ${imageUrl}`);
+    console.log(`Caption: ${payload.image.caption}`);
+    console.log('========================================\n');
+    return { ok: true, mocked: true, recipient: to, imageUrl };
+  }
+
+  try {
+    console.log(`[WhatsApp] Sending UPI QR image to ${to}...`);
+    const response = await whatsappClient.post('/messages', payload);
+    return { ok: true, mocked: false, messageId: response.data?.messages?.[0]?.id };
+  } catch (error) {
+    console.error(`[WhatsApp] Failed to send image to ${to}:`, error.response?.data || error.message);
+    return { ok: false, error: error.response?.data || error.message };
+  }
+}
+
 /**
  * Notifies the store owner of a new order or system event.
  * Owner's phone number is retrieved from OWNER_PHONE in .env.
@@ -149,7 +219,8 @@ async function downloadWhatsAppMedia(mediaId) {
 module.exports = {
   createWhatsAppClient,
   sendWhatsAppMessage,
+  sendWhatsAppDocument,
+  sendWhatsAppImage,
   notifyOwner,
   downloadWhatsAppMedia
 };
-

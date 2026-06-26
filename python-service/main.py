@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from routes.parse import router as parse_router
 from routes.transcribe import router as transcribe_router
-from routes.invoice import router as invoice_router
+from routes.invoice import generate_invoice, router as invoice_router
 
 load_dotenv()
 
@@ -25,6 +25,7 @@ app.add_middleware(
 app.include_router(parse_router, prefix='/api')
 app.include_router(transcribe_router, prefix='/api')
 app.include_router(invoice_router, prefix='/api')
+app.post('/generate-invoice')(generate_invoice)
 
 
 @app.get('/health')

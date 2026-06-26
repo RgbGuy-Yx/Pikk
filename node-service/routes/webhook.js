@@ -65,7 +65,7 @@ router.post('/', async (req, res) => {
         
         if (transRes && transRes.ok && transRes.transcript) {
           messageText = transRes.transcript;
-          console.log(`[Webhook] Transcription success: "${messageText}"`);
+          console.log(`[Webhook] Sarvam translate output: "${messageText}"`);
         } else {
           console.error('[Webhook] Transcription failed:', transRes?.error);
           return res.status(200).json({ received: true, error: 'Transcription failed' });
@@ -77,11 +77,10 @@ router.post('/', async (req, res) => {
     } else if (message?.text?.body) {
       messageText = message.text.body;
     } else if (req.body?.text) {
-      // Simple format for testing
       messageText = req.body.text;
     }
 
-    console.log('Message Text:', messageText);
+    console.log(`[Webhook] phone=${customerPhone} | text="${messageText}"`);
 
     // 2. Process Order
     if (messageText) {

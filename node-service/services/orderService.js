@@ -1,7 +1,13 @@
 const { createSupabaseClient } = require('./supabase');
-const { sendWhatsAppMessage, notifyOwner } = require('./whatsapp');
+const { createPythonServiceClient } = require('./pythonClient');
+const {
+  sendWhatsAppDocument,
+  sendWhatsAppImage,
+  sendWhatsAppMessage,
+} = require('./whatsapp');
 
 const supabase = createSupabaseClient();
+const pythonClient = createPythonServiceClient();
 
 /**
  * Service to orchestrate business logic for processing user orders.
@@ -211,32 +217,65 @@ Ham aapko notify karenge jab order delivery ke liye nikalega! 🛵`;
 
       await sendWhatsAppMessage(cleanPhone, receiptMessage);
 
-      // Step H: Dispatch Owner Alert Notification
-      let ownerItemsText = validItems
-        .map(i => `- ${i.quantity.toFixed(1)} ${i.product.unit} x *${i.product.name}*`)
-        .join('\n');
+      // Step G2: Generate and send invoice/payment assets.
+      let invoiceResult = null;
+      try {
+        const invoicePayload = {
+          order: {
+            id: order.id,
+            total_amount: totalAmount,
+            status: order.status,
+            created_at: order.created_at
+          },
+          customer: {
+            phone: cleanPhone,
+            name: cleanName
+          },
+          items: validItems.map(item => ({
+            name: item.product.name,
+            quantity: item.quantity,
+            unit: item.product.unit,
+            unit_price: item.unit_price,
+            line_total: item.line_total
+          })),
+          payment: {
+            status: 'unpaid'
+          }
+        };
 
-      let ownerReorderText = '';
-      if (reorderAlerts.length > 0) {
-        ownerReorderText += `\n\n🚨 *Reorder Warnings (Stock Low):*\n` + reorderAlerts.map(r => `- *${r.name}*: stock is down to ${r.currentStock} ${r.unit} (reorder level: ${r.reorderLevel} ${r.unit})`).join('\n');
+        console.log(`[OrderService] Requesting invoice assets for order #${order.id}...`);
+        invoiceResult = await pythonClient.generateInvoice(invoicePayload);
+
+        if (invoiceResult?.ok && invoiceResult.invoice_url && invoiceResult.qr_url) {
+          await sendWhatsAppDocument(
+            cleanPhone,
+            invoiceResult.invoice_url,
+            `shopbot-invoice-${order.id}.pdf`,
+            `Invoice for ShopBot order #${order.id}`
+          );
+          await sendWhatsAppImage(
+            cleanPhone,
+            invoiceResult.qr_url,
+            `Scan to pay Rs. ${totalAmount.toFixed(2)} for ShopBot order #${order.id}`
+          );
+          console.log(`[OrderService] Invoice and QR sent for order #${order.id}.`);
+        } else {
+          throw new Error(invoiceResult?.error || 'Invoice service returned no asset URLs');
+        }
+      } catch (invoiceError) {
+        console.error(`[OrderService] Invoice flow failed for order #${order.id}:`, invoiceError.message);
+        await sendWhatsAppMessage(
+          cleanPhone,
+          `Your order #${order.id} is confirmed, but invoice/payment QR generation is delayed.`
+        );
       }
-
-      const ownerAlertMessage = `🛒 *New Order Received!*
-
-*Order ID:* #${order.id}
-*Customer:* ${cleanName} (${cleanPhone})
-*Total Value:* ₹${totalAmount.toFixed(2)}
-
-*Items to Pack:*
-${ownerItemsText}${ownerReorderText}`;
-
-      await notifyOwner(ownerAlertMessage);
 
       return {
         success: true,
         orderId: order.id,
         totalAmount,
-        validItemsCount: validItems.length
+        validItemsCount: validItems.length,
+        invoice: invoiceResult
       };
 
     } catch (err) {

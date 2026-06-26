@@ -5,7 +5,8 @@ function createSupabaseClient() {
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseKey) {
-    throw new Error('[Supabase] Missing credentials. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (or SUPABASE_ANON_KEY).');
+    console.warn('[Supabase] Missing credentials. Running in offline mode.');
+    return null;
   }
 
   // Handle accidental inclusion of /rest/v1/ path in SUPABASE_URL
@@ -19,6 +20,9 @@ function createSupabaseClient() {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
+    },
+    db: {
+      schema: 'public',
     },
   });
 }

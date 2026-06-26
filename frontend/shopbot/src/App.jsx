@@ -1,90 +1,61 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import {
+  LayoutDashboard, Package, ShoppingCart, Users, RefreshCw,
+  Search, Plus, Pencil, Trash2, X, AlertTriangle, TrendingUp,
+  IndianRupee, Boxes, UserCheck, Bell, ChevronRight, PackageCheck,
+  Truck, CircleCheck, CircleX, Clock, PackageOpen, Loader2, ArrowUpRight
+} from 'lucide-react';
+import {
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, BarChart, Bar, Legend
+} from 'recharts';
 import './App.css';
 
-// Base backend URL
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
-// MOCK DATA for robust offline fallbacks
 const MOCK_ANALYTICS = {
-  summary: {
-    totalRevenue: 2430.00,
-    totalOrders: 12,
-    totalCustomers: 5,
-    lowStockAlerts: 2
-  },
-  statusDistribution: {
-    pending: 3,
-    packaged: 2,
-    shipped: 4,
-    delivered: 2,
-    cancelled: 1
-  },
+  summary: { totalRevenue: 2430.00, totalOrders: 12, totalCustomers: 5, lowStockAlerts: 2 },
+  statusDistribution: { pending: 3, packaged: 2, shipped: 4, delivered: 2, cancelled: 1 },
   lowStockProducts: [
-    { id: 6, name: 'daal', price: 120.00, stock_quantity: 10.50, reorder_level: 12.00, unit: 'kg' },
-    { id: 7, name: 'bread', price: 40.00, stock_quantity: 5.00, reorder_level: 8.00, unit: 'piece' }
+    { id: 6, name: 'daal', price: 120, stock_quantity: 10.5, reorder_level: 12, unit: 'kg' },
+    { id: 7, name: 'bread', price: 40, stock_quantity: 5, reorder_level: 8, unit: 'piece' }
   ],
   popularProducts: [
-    { name: 'atta', quantity: 18.0, revenue: 810.00 },
-    { name: 'oil', quantity: 6.0, revenue: 900.00 },
-    { name: 'milk', quantity: 8.0, revenue: 480.00 },
-    { name: 'sugar', quantity: 4.0, revenue: 160.00 }
+    { name: 'atta', quantity: 18, revenue: 810 },
+    { name: 'oil', quantity: 6, revenue: 900 },
+    { name: 'milk', quantity: 8, revenue: 480 },
+    { name: 'sugar', quantity: 4, revenue: 160 }
   ],
   salesTimeline: [
-    { date: '2026-06-08', revenue: 350.00 },
-    { date: '2026-06-09', revenue: 580.00 },
-    { date: '2026-06-10', revenue: 420.00 },
-    { date: '2026-06-11', revenue: 680.00 },
-    { date: '2026-06-12', revenue: 400.00 }
+    { date: '2026-06-08', revenue: 350 }, { date: '2026-06-09', revenue: 580 },
+    { date: '2026-06-10', revenue: 420 }, { date: '2026-06-11', revenue: 680 },
+    { date: '2026-06-12', revenue: 400 }
   ]
 };
 
 const MOCK_INVENTORY = [
-  { id: 1, name: 'atta', price: 45.00, stock_quantity: 100.00, reorder_level: 20.00, unit: 'kg' },
-  { id: 2, name: 'oil', price: 150.00, stock_quantity: 50.00, reorder_level: 10.00, unit: 'litre' },
-  { id: 3, name: 'milk', price: 60.00, stock_quantity: 40.00, reorder_level: 10.00, unit: 'litre' },
-  { id: 4, name: 'sugar', price: 40.00, stock_quantity: 80.00, reorder_level: 15.00, unit: 'kg' },
-  { id: 5, name: 'potato', price: 25.00, stock_quantity: 150.00, reorder_level: 30.00, unit: 'kg' },
-  { id: 6, name: 'daal', price: 120.00, stock_quantity: 10.50, reorder_level: 12.00, unit: 'kg' },
-  { id: 7, name: 'bread', price: 40.00, stock_quantity: 5.00, reorder_level: 8.00, unit: 'piece' }
+  { id: 1, name: 'atta', price: 45, stock_quantity: 100, reorder_level: 20, unit: 'kg' },
+  { id: 2, name: 'oil', price: 150, stock_quantity: 50, reorder_level: 10, unit: 'litre' },
+  { id: 3, name: 'milk', price: 60, stock_quantity: 40, reorder_level: 10, unit: 'litre' },
+  { id: 4, name: 'sugar', price: 40, stock_quantity: 80, reorder_level: 15, unit: 'kg' },
+  { id: 5, name: 'potato', price: 25, stock_quantity: 150, reorder_level: 30, unit: 'kg' },
+  { id: 6, name: 'daal', price: 120, stock_quantity: 10.5, reorder_level: 12, unit: 'kg' },
+  { id: 7, name: 'bread', price: 40, stock_quantity: 5, reorder_level: 8, unit: 'piece' }
 ];
 
 const MOCK_ORDERS = [
-  {
-    id: 501,
-    customer_phone: '919876543210',
-    total_amount: 240.00,
-    status: 'pending',
-    created_at: '2026-06-12T10:15:30Z',
-    customers: { name: 'Yuvraj', phone: '919876543210' },
-    order_items: [
-      { id: 1001, quantity: 2, unit_price: 45.00, products: { name: 'atta', unit: 'kg' } },
-      { id: 1002, quantity: 1, unit_price: 150.00, products: { name: 'oil', unit: 'litre' } }
-    ]
-  },
-  {
-    id: 502,
-    customer_phone: '918888888888',
-    total_amount: 200.00,
-    status: 'delivered',
-    created_at: '2026-06-11T14:30:22Z',
-    customers: { name: 'Aarav Sharma', phone: '918888888888' },
-    order_items: [
-      { id: 1003, quantity: 5, unit_price: 40.00, products: { name: 'bread', unit: 'piece' } }
-    ]
-  },
-  {
-    id: 503,
-    customer_phone: '919876543210',
-    total_amount: 540.00,
-    status: 'shipped',
-    created_at: '2026-06-11T09:12:05Z',
-    customers: { name: 'Yuvraj', phone: '919876543210' },
-    order_items: [
-      { id: 1004, quantity: 3, unit_price: 120.00, products: { name: 'daal', unit: 'kg' } },
-      { id: 1005, quantity: 3, unit_price: 60.00, products: { name: 'milk', unit: 'litre' } }
-    ]
-  }
+  { id: 501, customer_phone: '919876543210', total_amount: 240, status: 'pending', created_at: '2026-06-12T10:15:30Z', customers: { name: 'Yuvraj', phone: '919876543210' }, order_items: [{ quantity: 2, unit_price: 45, products: { name: 'atta', unit: 'kg' } }, { quantity: 1, unit_price: 150, products: { name: 'oil', unit: 'litre' } }] },
+  { id: 502, customer_phone: '918888888888', total_amount: 200, status: 'delivered', created_at: '2026-06-11T14:30:22Z', customers: { name: 'Aarav Sharma', phone: '918888888888' }, order_items: [{ quantity: 5, unit_price: 40, products: { name: 'bread', unit: 'piece' } }] },
+  { id: 503, customer_phone: '919876543210', total_amount: 540, status: 'shipped', created_at: '2026-06-11T09:12:05Z', customers: { name: 'Yuvraj', phone: '919876543210' }, order_items: [{ quantity: 3, unit_price: 120, products: { name: 'daal', unit: 'kg' } }, { quantity: 3, unit_price: 60, products: { name: 'milk', unit: 'litre' } }] }
 ];
+
+const STATUS_CONFIG = {
+  pending: { icon: Clock, color: '#f5a623', label: 'Pending' },
+  packaged: { icon: PackageOpen, color: '#7928ca', label: 'Packaged' },
+  shipped: { icon: Truck, color: '#0070f3', label: 'Shipped' },
+  delivered: { icon: CircleCheck, color: '#50e3c2', label: 'Delivered' },
+  cancelled: { icon: CircleX, color: '#ee0000', label: 'Cancelled' },
+};
 
 function App() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -92,831 +63,592 @@ function App() {
   const [inventory, setInventory] = useState([]);
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [connectionMode, setConnectionMode] = useState('Checking...');
-
-  // Modal / Form States
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
-  const [newProduct, setNewProduct] = useState({
-    name: '',
-    price: '',
-    stock_quantity: '',
-    reorder_level: '',
-    unit: 'piece'
-  });
-
-  // Search Filters
+  const [newProduct, setNewProduct] = useState({ name: '', price: '', stock_quantity: '', reorder_level: '', unit: 'piece' });
   const [orderFilter, setOrderFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Fetch all data
   const fetchData = async () => {
     setLoading(true);
-    setError(null);
     try {
-      // Test backend connection
       const healthRes = await fetch(`${API_URL}/health`).catch(() => null);
-      
       if (healthRes && healthRes.ok) {
-        setConnectionMode('Live API');
-        
-        // Fetch components
+        setConnectionMode('Live');
         const [ordersRes, inventoryRes, analyticsRes] = await Promise.all([
-          fetch(`${API_URL}/orders`),
-          fetch(`${API_URL}/inventory`),
-          fetch(`${API_URL}/analytics`)
+          fetch(`${API_URL}/orders`), fetch(`${API_URL}/inventory`), fetch(`${API_URL}/analytics`)
         ]);
-
-        const ordersData = await ordersRes.json();
-        const inventoryData = await inventoryRes.json();
-        const analyticsData = await analyticsRes.json();
-
-        setOrders(ordersData);
-        setInventory(inventoryData);
-        setAnalytics(analyticsData);
+        setOrders(await ordersRes.json());
+        setInventory(await inventoryRes.json());
+        setAnalytics(await analyticsRes.json());
       } else {
-        // Fallback to Mocks
-        setConnectionMode('Offline Demo Mode');
-        setOrders(MOCK_ORDERS);
-        setInventory(MOCK_INVENTORY);
-        setAnalytics(MOCK_ANALYTICS);
+        setConnectionMode('Offline');
+        setOrders(MOCK_ORDERS); setInventory(MOCK_INVENTORY); setAnalytics(MOCK_ANALYTICS);
       }
-    } catch (err) {
-      console.error('Fetch error, falling back to mock details:', err);
-      setConnectionMode('Offline Demo Mode');
-      setOrders(MOCK_ORDERS);
-      setInventory(MOCK_INVENTORY);
-      setAnalytics(MOCK_ANALYTICS);
-    } finally {
-      setLoading(false);
-    }
+    } catch {
+      setConnectionMode('Offline');
+      setOrders(MOCK_ORDERS); setInventory(MOCK_INVENTORY); setAnalytics(MOCK_ANALYTICS);
+    } finally { setLoading(false); }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  useEffect(() => { fetchData(); }, []);
 
-  // Update Order Status
   const handleUpdateStatus = async (orderId, newStatus) => {
     try {
-      if (connectionMode === 'Live API') {
-        const res = await fetch(`${API_URL}/orders/${orderId}/status`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: newStatus })
-        });
-        if (!res.ok) throw new Error('Failed to update status');
-        
-        // Update state
-        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
-        if (selectedOrder && selectedOrder.id === orderId) {
-          setSelectedOrder(prev => ({ ...prev, status: newStatus }));
-        }
-        
-        // Refresh analytics in background
-        fetch(`${API_URL}/analytics`)
-          .then(r => r.json())
-          .then(data => setAnalytics(data));
-      } else {
-        // Mock state updates
-        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
-        if (selectedOrder && selectedOrder.id === orderId) {
-          setSelectedOrder(prev => ({ ...prev, status: newStatus }));
-        }
-        // Update mock analytics distribution
-        setAnalytics(prev => {
-          const dist = { ...prev.statusDistribution };
-          const oldStatus = orders.find(o => o.id === orderId)?.status;
-          if (oldStatus && dist[oldStatus] > 0) dist[oldStatus]--;
-          dist[newStatus] = (dist[newStatus] || 0) + 1;
-          return { ...prev, statusDistribution: dist };
-        });
+      if (connectionMode === 'Live') {
+        const res = await fetch(`${API_URL}/orders/${orderId}/status`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: newStatus }) });
+        if (!res.ok) throw new Error('Failed');
       }
-    } catch (err) {
-      alert(`Error updating order status: ${err.message}`);
-    }
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+      if (selectedOrder?.id === orderId) setSelectedOrder(prev => ({ ...prev, status: newStatus }));
+      if (connectionMode === 'Live') fetch(`${API_URL}/analytics`).then(r => r.json()).then(setAnalytics);
+    } catch (err) { alert(`Error: ${err.message}`); }
   };
 
-  // Add / Edit Product Submit
   const handleProductSubmit = async (e) => {
     e.preventDefault();
     try {
       if (editingProduct) {
-        // Edit flow
-        if (connectionMode === 'Live API') {
-          const res = await fetch(`${API_URL}/inventory/${editingProduct.id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(newProduct)
-          });
-          if (!res.ok) throw new Error('Failed to update product');
+        if (connectionMode === 'Live') {
+          const res = await fetch(`${API_URL}/inventory/${editingProduct.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newProduct) });
+          if (!res.ok) throw new Error('Failed');
           const updated = await res.json();
           setInventory(prev => prev.map(p => p.id === editingProduct.id ? updated : p));
         } else {
           setInventory(prev => prev.map(p => p.id === editingProduct.id ? { ...p, ...newProduct, price: Number(newProduct.price), stock_quantity: Number(newProduct.stock_quantity), reorder_level: Number(newProduct.reorder_level) } : p));
         }
       } else {
-        // Create flow
-        if (connectionMode === 'Live API') {
-          const res = await fetch(`${API_URL}/inventory`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(newProduct)
-          });
-          if (!res.ok) throw new Error('Failed to create product');
+        if (connectionMode === 'Live') {
+          const res = await fetch(`${API_URL}/inventory`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newProduct) });
+          if (!res.ok) throw new Error('Failed');
           const created = await res.json();
           setInventory(prev => [...prev, created]);
         } else {
-          const created = {
-            id: Date.now(),
-            ...newProduct,
-            price: Number(newProduct.price),
-            stock_quantity: Number(newProduct.stock_quantity),
-            reorder_level: Number(newProduct.reorder_level)
-          };
-          setInventory(prev => [...prev, created]);
+          setInventory(prev => [...prev, { id: Date.now(), ...newProduct, price: Number(newProduct.price), stock_quantity: Number(newProduct.stock_quantity), reorder_level: Number(newProduct.reorder_level) }]);
         }
       }
-      setIsProductModalOpen(false);
-      setEditingProduct(null);
+      setIsProductModalOpen(false); setEditingProduct(null);
       setNewProduct({ name: '', price: '', stock_quantity: '', reorder_level: '', unit: 'piece' });
-      
-      // Refresh analytics alerts count
-      if (connectionMode === 'Live API') {
-        fetch(`${API_URL}/analytics`)
-          .then(r => r.json())
-          .then(data => setAnalytics(data));
-      }
-    } catch (err) {
-      alert(`Error saving product: ${err.message}`);
-    }
+    } catch (err) { alert(`Error: ${err.message}`); }
   };
 
-  // Delete Product
-  const handleDeleteProduct = async (productId) => {
-    if (!confirm('Are you sure you want to delete this product?')) return;
-    try {
-      if (connectionMode === 'Live API') {
-        const res = await fetch(`${API_URL}/inventory/${productId}`, {
-          method: 'DELETE'
-        });
-        if (!res.ok) throw new Error('Failed to delete product');
-        setInventory(prev => prev.filter(p => p.id !== productId));
-      } else {
-        setInventory(prev => prev.filter(p => p.id !== productId));
-      }
-    } catch (err) {
-      alert(`Error deleting product: ${err.message}`);
-    }
+  const handleDeleteProduct = async (id) => {
+    if (!confirm('Delete this product?')) return;
+    if (connectionMode === 'Live') await fetch(`${API_URL}/inventory/${id}`, { method: 'DELETE' });
+    setInventory(prev => prev.filter(p => p.id !== id));
   };
 
-  const openEditProduct = (product) => {
-    setEditingProduct(product);
-    setNewProduct({
-      name: product.name,
-      price: product.price,
-      stock_quantity: product.stock_quantity,
-      reorder_level: product.reorder_level,
-      unit: product.unit
-    });
-    setIsProductModalOpen(true);
-  };
-
-  // Extract customers list dynamically from orders
   const getCustomersList = () => {
     const list = {};
-    orders.forEach(order => {
-      const phone = order.customer_phone;
-      const name = order.customers?.name || 'Customer';
-      const date = order.created_at;
-      if (!list[phone]) {
-        list[phone] = {
-          name,
-          phone,
-          totalOrders: 0,
-          totalSpent: 0,
-          registeredAt: date
-        };
-      }
-      list[phone].totalOrders++;
-      list[phone].totalSpent += Number(order.total_amount);
-      if (new Date(date) < new Date(list[phone].registeredAt)) {
-        list[phone].registeredAt = date;
-      }
+    orders.forEach(o => {
+      const p = o.customer_phone, n = o.customers?.name || 'Customer';
+      if (!list[p]) list[p] = { name: n, phone: p, totalOrders: 0, totalSpent: 0, firstOrder: o.created_at };
+      list[p].totalOrders++; list[p].totalSpent += Number(o.total_amount);
+      if (new Date(o.created_at) < new Date(list[p].firstOrder)) list[p].firstOrder = o.created_at;
     });
     return Object.values(list);
   };
 
-  const filteredOrders = orders.filter(order => {
-    const statusMatch = orderFilter === 'all' || order.status === orderFilter;
-    const searchString = searchQuery.toLowerCase();
-    const customerName = (order.customers?.name || '').toLowerCase();
-    const customerPhone = order.customer_phone || '';
-    const namePhoneMatch = customerName.includes(searchString) || customerPhone.includes(searchString) || order.id.toString().includes(searchString);
-    return statusMatch && namePhoneMatch;
+  const filteredOrders = orders.filter(o => {
+    const statusMatch = orderFilter === 'all' || o.status === orderFilter;
+    const q = searchQuery.toLowerCase();
+    return statusMatch && ((o.customers?.name || '').toLowerCase().includes(q) || (o.customer_phone || '').includes(q) || String(o.id).includes(q));
   });
 
-  const filteredInventory = inventory.filter(product => 
-    product.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredInventory = inventory.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredCustomers = getCustomersList().filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()) || c.phone.includes(searchQuery));
 
-  const filteredCustomers = getCustomersList().filter(customer => 
-    customer.name.toLowerCase().includes(searchQuery.toLowerCase()) || customer.phone.includes(searchQuery)
-  );
+  const pendingCount = orders.filter(o => o.status === 'pending').length;
+  const lowStockCount = inventory.filter(p => Number(p.stock_quantity) <= Number(p.reorder_level)).length;
+
+  const tabs = [
+    { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+    { id: 'orders', label: 'Orders', icon: Package, badge: pendingCount },
+    { id: 'inventory', label: 'Inventory', icon: Boxes, badge: lowStockCount, badgeType: 'warning' },
+    { id: 'customers', label: 'Customers', icon: Users },
+  ];
 
   return (
-    <div className="dashboard-layout">
-      {/* Sidebar */}
+    <div className="app">
       <aside className="sidebar">
-        <div className="brand-header">
-          <div className="logo-icon">🛒</div>
-          <h2>ShopBot</h2>
+        <div className="sidebar-brand">
+          <div className="brand-icon"><ShoppingCart size={16} /></div>
+          <span className="brand-name">pikk</span>
         </div>
-        <nav className="nav-menu">
-          <button 
-            className={`nav-item ${activeTab === 'overview' ? 'active' : ''}`}
-            onClick={() => { setActiveTab('overview'); setSearchQuery(''); }}
-          >
-            📊 Overview
-          </button>
-          <button 
-            className={`nav-item ${activeTab === 'orders' ? 'active' : ''}`}
-            onClick={() => { setActiveTab('orders'); setSearchQuery(''); }}
-          >
-            📦 Orders
-            {orders.filter(o => o.status === 'pending').length > 0 && (
-              <span className="badge-alert">{orders.filter(o => o.status === 'pending').length}</span>
-            )}
-          </button>
-          <button 
-            className={`nav-item ${activeTab === 'inventory' ? 'active' : ''}`}
-            onClick={() => { setActiveTab('inventory'); setSearchQuery(''); }}
-          >
-            🍏 Inventory
-            {inventory.filter(p => Number(p.stock_quantity) <= Number(p.reorder_level)).length > 0 && (
-              <span className="badge-warning">!</span>
-            )}
-          </button>
-          <button 
-            className={`nav-item ${activeTab === 'customers' ? 'active' : ''}`}
-            onClick={() => { setActiveTab('customers'); setSearchQuery(''); }}
-          >
-            👥 Customers
-          </button>
+        <nav className="sidebar-nav">
+          {tabs.map(item => (
+            <button
+              key={item.id}
+              className={`nav-btn ${activeTab === item.id ? 'active' : ''}`}
+              onClick={() => { setActiveTab(item.id); setSearchQuery(''); }}
+            >
+              <item.icon size={16} />
+              <span>{item.label}</span>
+              {item.badge > 0 && <span className={`nav-badge ${item.badgeType || ''}`}>{item.badge}</span>}
+            </button>
+          ))}
         </nav>
-        <div className="connection-status">
-          <span className={`dot ${connectionMode === 'Live API' ? 'live' : 'mock'}`}></span>
+        <div className="sidebar-footer">
+          <div className={`conn-dot ${connectionMode === 'Live' ? 'live' : ''}`} />
           <span>{connectionMode}</span>
         </div>
       </aside>
 
-      {/* Main Content Area */}
-      <main className="content-container">
-        <header className="content-header">
-          <div>
-            <h1>Dashboard</h1>
-            <p className="subtitle">Welcome to the ShopBot Shop Management Control Panel</p>
-          </div>
-          <button className="btn btn-secondary refresh-btn" onClick={fetchData}>
-            🔄 Refresh Data
-          </button>
+      <main className="main">
+        <header className="topbar">
+          <h1 className="page-title">{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}</h1>
+          <button className="btn-icon" onClick={fetchData} title="Refresh"><RefreshCw size={14} /></button>
         </header>
 
         {loading ? (
-          <div className="loader-container">
-            <div className="spinner"></div>
-            <p>Fetching latest shop information...</p>
-          </div>
+          <div className="loader"><Loader2 size={24} className="spin" /><span>Loading…</span></div>
         ) : (
-          <>
-            {/* OVERVIEW TAB */}
+          <div className="content">
             {activeTab === 'overview' && analytics && (
-              <div className="tab-pane fade-in">
-                {/* Stats Grid */}
-                <div className="stats-grid">
-                  <div className="stat-card">
-                    <div className="stat-icon revenue">₹</div>
-                    <div className="stat-content">
-                      <span className="stat-label">Total Revenue</span>
-                      <h2 className="stat-value">₹{analytics.summary.totalRevenue.toFixed(2)}</h2>
-                    </div>
-                  </div>
-                  <div className="stat-card">
-                    <div className="stat-icon orders">📦</div>
-                    <div className="stat-content">
-                      <span className="stat-label">Total Orders</span>
-                      <h2 className="stat-value">{analytics.summary.totalOrders}</h2>
-                    </div>
-                  </div>
-                  <div className="stat-card">
-                    <div className="stat-icon customers">👥</div>
-                    <div className="stat-content">
-                      <span className="stat-label">Active Customers</span>
-                      <h2 className="stat-value">{analytics.summary.totalCustomers}</h2>
-                    </div>
-                  </div>
-                  <div className="stat-card">
-                    <div className="stat-icon alerts">🚨</div>
-                    <div className="stat-content">
-                      <span className="stat-label">Stock Alerts</span>
-                      <h2 className="stat-value">{analytics.summary.lowStockAlerts}</h2>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Main Overview Dashboard Split */}
-                <div className="overview-split">
-                  {/* Left Column: Alerts & Popular items */}
-                  <div className="overview-column">
-                    <div className="card">
-                      <div className="card-header">
-                        <h3>🚨 Stock Reorder Alerts</h3>
-                      </div>
-                      <div className="card-body">
-                        {analytics.lowStockProducts.length === 0 ? (
-                          <div className="empty-state small">
-                            <span className="empty-icon">✅</span>
-                            <p>All product stocks are above reorder thresholds!</p>
-                          </div>
-                        ) : (
-                          <div className="alert-list">
-                            {analytics.lowStockProducts.map(p => (
-                              <div key={p.id} className="alert-item">
-                                <div className="alert-details">
-                                  <strong>{p.name}</strong>
-                                  <span>Current: {p.stock_quantity} {p.unit} (Limit: {p.reorder_level})</span>
-                                </div>
-                                <button className="btn btn-sm btn-primary" onClick={() => openEditProduct(p)}>
-                                  Restock
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="card margin-top">
-                      <div className="card-header">
-                        <h3>🔥 Popular Products</h3>
-                      </div>
-                      <div className="card-body">
-                        {analytics.popularProducts.length === 0 ? (
-                          <p className="no-data">No product sales logged yet.</p>
-                        ) : (
-                          <div className="popular-list">
-                            {analytics.popularProducts.map((p, idx) => (
-                              <div key={idx} className="popular-item">
-                                <div className="popular-details">
-                                  <strong>{p.name}</strong>
-                                  <span>Qty Sold: {p.quantity}</span>
-                                </div>
-                                <div className="popular-revenue">
-                                  <span>₹{p.revenue.toFixed(2)}</span>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Right Column: Sales Trends */}
-                  <div className="overview-column">
-                    <div className="card fill-height">
-                      <div className="card-header">
-                        <h3>📈 Sales Trends & Distribution</h3>
-                      </div>
-                      <div className="card-body">
-                        <h4>Daily Revenues</h4>
-                        {analytics.salesTimeline.length === 0 ? (
-                          <p className="no-data">No sales data logged.</p>
-                        ) : (
-                          <div className="trend-timeline">
-                            {analytics.salesTimeline.map((item, idx) => (
-                              <div key={idx} className="timeline-bar-row">
-                                <span className="timeline-date">{item.date}</span>
-                                <div className="bar-container">
-                                  <div 
-                                    className="timeline-bar" 
-                                    style={{ width: `${Math.min(100, (item.revenue / 1000) * 100)}%` }}
-                                  ></div>
-                                </div>
-                                <span className="timeline-amount">₹{item.revenue.toFixed(2)}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-
-                        <h4 className="margin-top">Order Status Split</h4>
-                        <div className="status-split-bar">
-                          {Object.entries(analytics.statusDistribution).map(([status, count]) => {
-                            const pct = ((count / analytics.summary.totalOrders) * 100).toFixed(0);
-                            return count > 0 ? (
-                              <div 
-                                key={status} 
-                                className={`status-split-part status-${status}`}
-                                style={{ width: `${pct}%` }}
-                                title={`${status}: ${count} (${pct}%)`}
-                              >
-                                {status.slice(0, 3)} ({count})
-                              </div>
-                            ) : null;
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <OverviewTab
+                analytics={analytics}
+                inventory={inventory}
+                openEditProduct={(p) => {
+                  setEditingProduct(p);
+                  setNewProduct({ name: p.name, price: p.price, stock_quantity: p.stock_quantity, reorder_level: p.reorder_level, unit: p.unit });
+                  setIsProductModalOpen(true);
+                }}
+              />
             )}
-
-            {/* ORDERS TAB */}
             {activeTab === 'orders' && (
-              <div className="tab-pane fade-in">
-                {/* Filters Row */}
-                <div className="filters-row">
-                  <div className="search-box">
-                    <input 
-                      type="text" 
-                      placeholder="Search orders by customer or ID..." 
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                  </div>
-                  <div className="filter-buttons">
-                    {['all', 'pending', 'packaged', 'shipped', 'delivered', 'cancelled'].map(status => (
-                      <button 
-                        key={status}
-                        className={`filter-btn ${orderFilter === status ? 'active' : ''}`}
-                        onClick={() => setOrderFilter(status)}
-                      >
-                        {status.charAt(0).toUpperCase() + status.slice(1)}
-                      </button>
+              <>
+                <div className="toolbar">
+                  <div className="search"><Search size={14} /><input placeholder="Search orders…" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} /></div>
+                  <div className="pills">
+                    {['all', 'pending', 'packaged', 'shipped', 'delivered', 'cancelled'].map(s => (
+                      <button key={s} className={`pill ${orderFilter === s ? 'active' : ''}`} onClick={() => setOrderFilter(s)}>{s === 'all' ? 'All' : STATUS_CONFIG[s]?.label || s}</button>
                     ))}
                   </div>
                 </div>
-
-                {/* Orders List */}
-                <div className="table-wrapper">
-                  <table className="data-table">
-                    <thead>
-                      <tr>
-                        <th>Order ID</th>
-                        <th>Customer</th>
-                        <th>Phone</th>
-                        <th>Items Qty</th>
-                        <th>Total Value</th>
-                        <th>Date & Time</th>
-                        <th>Status</th>
-                        <th>Action</th>
-                      </tr>
-                    </thead>
+                <div className="table-card">
+                  <table>
+                    <thead><tr><th>ID</th><th>Customer</th><th>Items</th><th>Total</th><th>Date</th><th>Status</th><th /></tr></thead>
                     <tbody>
-                      {filteredOrders.length === 0 ? (
-                        <tr>
-                          <td colSpan="8" className="no-records-cell">No matching orders found.</td>
-                        </tr>
-                      ) : (
-                        filteredOrders.map(order => {
-                          const totalItemsCount = order.order_items?.reduce((sum, item) => sum + Number(item.quantity), 0) || 0;
-                          return (
-                            <tr key={order.id}>
-                              <td><strong>#{order.id}</strong></td>
-                              <td>{order.customers?.name || 'Customer'}</td>
-                              <td>{order.customer_phone}</td>
-                              <td>{totalItemsCount}</td>
-                              <td><strong>₹{Number(order.total_amount).toFixed(2)}</strong></td>
-                              <td>{new Date(order.created_at).toLocaleString()}</td>
-                              <td>
-                                <span className={`status-pill status-${order.status}`}>
-                                  {order.status}
-                                </span>
-                              </td>
-                              <td>
-                                <button className="btn btn-sm btn-secondary" onClick={() => setSelectedOrder(order)}>
-                                  View Details
-                                </button>
-                              </td>
-                            </tr>
-                          );
-                        })
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
-            {/* INVENTORY TAB */}
-            {activeTab === 'inventory' && (
-              <div className="tab-pane fade-in">
-                {/* Inventory Action Row */}
-                <div className="filters-row">
-                  <div className="search-box">
-                    <input 
-                      type="text" 
-                      placeholder="Search inventory products..." 
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                  </div>
-                  <button className="btn btn-primary" onClick={() => { setEditingProduct(null); setNewProduct({ name: '', price: '', stock_quantity: '', reorder_level: '', unit: 'piece' }); setIsProductModalOpen(true); }}>
-                    ➕ Add Product
-                  </button>
-                </div>
-
-                {/* Inventory Table */}
-                <div className="table-wrapper">
-                  <table className="data-table">
-                    <thead>
-                      <tr>
-                        <th>ID</th>
-                        <th>Product Name</th>
-                        <th>Price</th>
-                        <th>Stock Available</th>
-                        <th>Reorder Level</th>
-                        <th>Unit</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredInventory.length === 0 ? (
-                        <tr>
-                          <td colSpan="8" className="no-records-cell">No products found.</td>
-                        </tr>
-                      ) : (
-                        filteredInventory.map(product => {
-                          const isLowStock = Number(product.stock_quantity) <= Number(product.reorder_level);
-                          return (
-                            <tr key={product.id} className={isLowStock ? 'low-stock-row' : ''}>
-                              <td>{product.id}</td>
-                              <td><strong>{product.name}</strong></td>
-                              <td>₹{Number(product.price).toFixed(2)}</td>
-                              <td>
-                                <span className={`stock-text ${isLowStock ? 'low-stock' : 'normal-stock'}`}>
-                                  {product.stock_quantity}
-                                </span>
-                              </td>
-                              <td>{product.reorder_level}</td>
-                              <td>{product.unit}</td>
-                              <td>
-                                <span className={`status-pill ${isLowStock ? 'status-cancelled' : 'status-delivered'}`}>
-                                  {isLowStock ? 'Low Stock' : 'Good Stock'}
-                                </span>
-                              </td>
-                              <td>
-                                <div className="action-buttons-group">
-                                  <button className="btn btn-sm btn-secondary" onClick={() => openEditProduct(product)}>
-                                    Edit
-                                  </button>
-                                  <button className="btn btn-sm btn-danger" onClick={() => handleDeleteProduct(product.id)}>
-                                    Delete
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        })
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
-            {/* CUSTOMERS TAB */}
-            {activeTab === 'customers' && (
-              <div className="tab-pane fade-in">
-                <div className="filters-row">
-                  <div className="search-box">
-                    <input 
-                      type="text" 
-                      placeholder="Search customers by name or phone..." 
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <div className="table-wrapper">
-                  <table className="data-table">
-                    <thead>
-                      <tr>
-                        <th>Customer Name</th>
-                        <th>Phone Number</th>
-                        <th>First Order Date</th>
-                        <th>Total Orders placed</th>
-                        <th>Total Spent</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredCustomers.length === 0 ? (
-                        <tr>
-                          <td colSpan="5" className="no-records-cell">No customers found.</td>
-                        </tr>
-                      ) : (
-                        filteredCustomers.map((customer, idx) => (
-                          <tr key={idx}>
-                            <td><strong>{customer.name}</strong></td>
-                            <td>{customer.phone}</td>
-                            <td>{new Date(customer.registeredAt).toLocaleDateString()}</td>
-                            <td>{customer.totalOrders} orders</td>
-                            <td><strong>₹{customer.totalSpent.toFixed(2)}</strong></td>
+                      {filteredOrders.length === 0 ? <tr><td colSpan={7} className="empty">No orders found</td></tr> : filteredOrders.map(o => {
+                        const items = o.order_items?.reduce((s, i) => s + Number(i.quantity), 0) || 0;
+                        const St = STATUS_CONFIG[o.status]?.icon || Clock;
+                        return (
+                          <tr key={o.id} onClick={() => setSelectedOrder(o)} className="clickable">
+                            <td className="mono">#{o.id}</td>
+                            <td>{o.customers?.name || 'Customer'}</td>
+                            <td>{items}</td>
+                            <td className="mono">{'\u20B9'}{Number(o.total_amount).toFixed(0)}</td>
+                            <td className="muted">{new Date(o.created_at).toLocaleDateString()}</td>
+                            <td><span className="status" style={{ color: STATUS_CONFIG[o.status]?.color, background: STATUS_CONFIG[o.status]?.color + '14' }}><St size={12} />{STATUS_CONFIG[o.status]?.label}</span></td>
+                            <td><ChevronRight size={14} className="muted" /></td>
                           </tr>
-                        ))
-                      )}
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
-              </div>
+              </>
             )}
-          </>
+            {activeTab === 'inventory' && (
+              <>
+                <div className="toolbar">
+                  <div className="search"><Search size={14} /><input placeholder="Search products…" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} /></div>
+                  <button className="btn-primary" onClick={() => { setEditingProduct(null); setNewProduct({ name: '', price: '', stock_quantity: '', reorder_level: '', unit: 'piece' }); setIsProductModalOpen(true); }}><Plus size={14} />Add Product</button>
+                </div>
+                <div className="table-card">
+                  <table>
+                    <thead><tr><th>Product</th><th>Price</th><th>Stock</th><th>Reorder</th><th>Unit</th><th>Status</th><th>Actions</th></tr></thead>
+                    <tbody>
+                      {filteredInventory.length === 0 ? <tr><td colSpan={7} className="empty">No products found</td></tr> : filteredInventory.map(p => {
+                        const low = Number(p.stock_quantity) <= Number(p.reorder_level);
+                        return (
+                          <tr key={p.id} className={low ? 'low-stock' : ''}>
+                            <td className="fw-500">{p.name}</td>
+                            <td className="mono">{'\u20B9'}{Number(p.price).toFixed(0)}</td>
+                            <td className={low ? 'text-danger' : 'text-success'}>{p.stock_quantity}</td>
+                            <td className="muted">{p.reorder_level}</td>
+                            <td className="mono">{p.unit}</td>
+                            <td>{low ? <span className="status" style={{ color: '#ee0000', background: '#ee000014' }}><AlertTriangle size={12} />Low</span> : <span className="status" style={{ color: '#0070f3', background: '#0070f314' }}><CircleCheck size={12} />OK</span>}</td>
+                            <td>
+                              <div className="row-actions">
+                                <button className="btn-icon-sm" onClick={() => { setEditingProduct(p); setNewProduct({ name: p.name, price: p.price, stock_quantity: p.stock_quantity, reorder_level: p.reorder_level, unit: p.unit }); setIsProductModalOpen(true); }}><Pencil size={14} /></button>
+                                <button className="btn-icon-sm danger" onClick={() => handleDeleteProduct(p.id)}><Trash2 size={14} /></button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+            {activeTab === 'customers' && (
+              <>
+                <div className="toolbar"><div className="search"><Search size={14} /><input placeholder="Search customers…" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} /></div></div>
+                <div className="table-card">
+                  <table>
+                    <thead><tr><th>Name</th><th>Phone</th><th>First Order</th><th>Orders</th><th>Spent</th></tr></thead>
+                    <tbody>
+                      {filteredCustomers.length === 0 ? <tr><td colSpan={5} className="empty">No customers found</td></tr> : filteredCustomers.map((c, i) => (
+                        <tr key={i}><td className="fw-500">{c.name}</td><td className="mono">{c.phone}</td><td className="muted">{new Date(c.firstOrder).toLocaleDateString()}</td><td>{c.totalOrders}</td><td className="mono">{'\u20B9'}{c.totalSpent.toFixed(0)}</td></tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </div>
         )}
       </main>
 
-      {/* ORDER DETAIL DIALOG MODAL */}
-      {selectedOrder && (
-        <div className="modal-backdrop" onClick={() => setSelectedOrder(null)}>
-          <div className="modal-content large" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Order Details - #{selectedOrder.id}</h2>
-              <button className="close-btn" onClick={() => setSelectedOrder(null)}>&times;</button>
-            </div>
-            <div className="modal-body">
-              <div className="info-grid">
-                <div>
-                  <h4>Customer Info</h4>
-                  <p><strong>Name:</strong> {selectedOrder.customers?.name || 'Customer'}</p>
-                  <p><strong>Phone:</strong> {selectedOrder.customer_phone}</p>
-                </div>
-                <div>
-                  <h4>Order Summary</h4>
-                  <p><strong>Date:</strong> {new Date(selectedOrder.created_at).toLocaleString()}</p>
-                  <p><strong>Total:</strong> ₹{Number(selectedOrder.total_amount).toFixed(2)}</p>
-                </div>
-                <div>
-                  <h4>Order Status</h4>
-                  <span className={`status-pill status-${selectedOrder.status}`}>
-                    {selectedOrder.status}
-                  </span>
-                </div>
-              </div>
+      {selectedOrder && <OrderModal order={selectedOrder} onClose={() => setSelectedOrder(null)} onUpdateStatus={handleUpdateStatus} />}
+      {isProductModalOpen && <ProductModal product={editingProduct} newProduct={newProduct} setNewProduct={setNewProduct} onSubmit={handleProductSubmit} onClose={() => { setIsProductModalOpen(false); setEditingProduct(null); }} />}
+    </div>
+  );
+}
 
-              <h4>Items Ordered</h4>
-              <table className="detail-items-table">
-                <thead>
-                  <tr>
-                    <th>Product Item</th>
-                    <th>Price</th>
-                    <th>Quantity</th>
-                    <th>Subtotal</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {selectedOrder.order_items?.map((item, idx) => (
-                    <tr key={idx}>
-                      <td><strong>{item.products?.name || 'Unknown Item'}</strong></td>
-                      <td>₹{Number(item.unit_price).toFixed(2)}</td>
-                      <td>{item.quantity} {item.products?.unit || 'piece'}</td>
-                      <td>₹{(Number(item.unit_price) * Number(item.quantity)).toFixed(2)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+const DONUT_COLORS = {
+  pending: '#f5a623',
+  packaged: '#7928ca',
+  shipped: '#0070f3',
+  delivered: '#50e3c2',
+  cancelled: '#ee0000',
+};
 
-              <div className="status-management">
-                <h4>Pipeline Control Action:</h4>
-                <div className="pipeline-controls">
-                  <button 
-                    className="btn btn-secondary status-pending-btn" 
-                    disabled={selectedOrder.status === 'pending'}
-                    onClick={() => handleUpdateStatus(selectedOrder.id, 'pending')}
-                  >
-                    Set Pending
-                  </button>
-                  <button 
-                    className="btn btn-secondary status-packaged-btn" 
-                    disabled={selectedOrder.status === 'packaged'}
-                    onClick={() => handleUpdateStatus(selectedOrder.id, 'packaged')}
-                  >
-                    Set Packaged
-                  </button>
-                  <button 
-                    className="btn btn-secondary status-shipped-btn" 
-                    disabled={selectedOrder.status === 'shipped'}
-                    onClick={() => handleUpdateStatus(selectedOrder.id, 'shipped')}
-                  >
-                    Set Shipped
-                  </button>
-                  <button 
-                    className="btn btn-success status-delivered-btn" 
-                    disabled={selectedOrder.status === 'delivered'}
-                    onClick={() => handleUpdateStatus(selectedOrder.id, 'delivered')}
-                  >
-                    Set Delivered
-                  </button>
-                  <button 
-                    className="btn btn-danger status-cancelled-btn" 
-                    disabled={selectedOrder.status === 'cancelled'}
-                    onClick={() => handleUpdateStatus(selectedOrder.id, 'cancelled')}
-                  >
-                    Cancel Order
-                  </button>
-                </div>
-              </div>
-            </div>
+function ChartTooltip({ active, payload, label, prefix = '' }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="chart-tooltip">
+      <span className="chart-tooltip-label">{label}</span>
+      <span className="chart-tooltip-value">{prefix}{payload[0].value.toLocaleString()}</span>
+    </div>
+  );
+}
+
+function OverviewTab({ analytics, inventory, openEditProduct }) {
+  const salesData = analytics.salesTimeline.map(d => ({
+    date: d.date.slice(5),
+    revenue: d.revenue,
+  }));
+
+  const statusData = Object.entries(analytics.statusDistribution)
+    .filter(([, v]) => v > 0)
+    .map(([key, value]) => ({
+      name: STATUS_CONFIG[key]?.label || key,
+      value,
+      color: DONUT_COLORS[key] || '#888',
+    }));
+
+  const totalOrders = statusData.reduce((s, d) => s + d.value, 0);
+
+  const productData = analytics.popularProducts.map(p => ({
+    name: p.name,
+    revenue: p.revenue,
+    quantity: p.quantity,
+  }));
+
+  const inventoryHealth = inventory.map(p => ({
+    name: p.name,
+    stock: Number(p.stock_quantity),
+    reorder: Number(p.reorder_level),
+    isLow: Number(p.stock_quantity) <= Number(p.reorder_level),
+  }));
+
+  return (
+    <>
+      <div className="stats">
+        <div className="stat">
+          <div className="stat-icon green"><IndianRupee size={18} /></div>
+          <div><span className="stat-label">Revenue</span><span className="stat-value">{'₹'}{analytics.summary.totalRevenue.toFixed(0)}</span></div>
+        </div>
+        <div className="stat">
+          <div className="stat-icon blue"><ShoppingCart size={18} /></div>
+          <div><span className="stat-label">Orders</span><span className="stat-value">{analytics.summary.totalOrders}</span></div>
+        </div>
+        <div className="stat">
+          <div className="stat-icon purple"><UserCheck size={18} /></div>
+          <div><span className="stat-label">Customers</span><span className="stat-value">{analytics.summary.totalCustomers}</span></div>
+        </div>
+        <div className="stat">
+          <div className="stat-icon red"><Bell size={18} /></div>
+          <div><span className="stat-label">Low Stock</span><span className="stat-value">{analytics.summary.lowStockAlerts}</span></div>
+        </div>
+      </div>
+
+      {/* ─── Row 1: Sales Area Chart + Order Status Donut ─── */}
+      <div className="grid-2">
+        <div className="card">
+          <h3 className="card-title"><TrendingUp size={14} />Sales Timeline</h3>
+          <div className="chart-container">
+            <ResponsiveContainer width="100%" height={220}>
+              <AreaChart data={salesData} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="salesGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#171717" stopOpacity={0.12} />
+                    <stop offset="100%" stopColor="#171717" stopOpacity={0.01} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#eaeaea" vertical={false} />
+                <XAxis
+                  dataKey="date"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 11, fill: '#999', fontFamily: "'JetBrains Mono', monospace" }}
+                  dy={8}
+                />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 11, fill: '#999', fontFamily: "'JetBrains Mono', monospace" }}
+                  tickFormatter={v => `₹${v}`}
+                  dx={-4}
+                />
+                <Tooltip content={<ChartTooltip prefix="₹" />} />
+                <Area
+                  type="monotone"
+                  dataKey="revenue"
+                  stroke="#171717"
+                  strokeWidth={2}
+                  fill="url(#salesGradient)"
+                  dot={{ r: 3, fill: '#171717', strokeWidth: 0 }}
+                  activeDot={{ r: 5, fill: '#171717', strokeWidth: 2, stroke: '#fff' }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </div>
-      )}
 
-      {/* PRODUCT DIALOG MODAL */}
-      {isProductModalOpen && (
-        <div className="modal-backdrop" onClick={() => setIsProductModalOpen(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>{editingProduct ? 'Edit Product details' : 'Add New Product'}</h2>
-              <button className="close-btn" onClick={() => setIsProductModalOpen(false)}>&times;</button>
-            </div>
-            <form onSubmit={handleProductSubmit}>
-              <div className="modal-body">
-                <div className="form-group">
-                  <label>Product Name</label>
-                  <input 
-                    type="text" 
-                    required 
-                    value={newProduct.name}
-                    onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
-                    placeholder="e.g. bread"
+        <div className="card">
+          <h3 className="card-title"><Package size={14} />Order Status</h3>
+          <div className="donut-wrapper">
+            <div className="donut-chart">
+              <ResponsiveContainer width="100%" height={180}>
+                <PieChart>
+                  <Pie
+                    data={statusData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={52}
+                    outerRadius={76}
+                    paddingAngle={3}
+                    dataKey="value"
+                    stroke="none"
+                  >
+                    {statusData.map((entry, i) => (
+                      <Cell key={i} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    content={({ active, payload }) => {
+                      if (!active || !payload?.length) return null;
+                      return (
+                        <div className="chart-tooltip">
+                          <span className="chart-tooltip-label">{payload[0].name}</span>
+                          <span className="chart-tooltip-value">{payload[0].value} orders</span>
+                        </div>
+                      );
+                    }}
                   />
-                </div>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Price (₹)</label>
-                    <input 
-                      type="number" 
-                      step="0.01" 
-                      required 
-                      value={newProduct.price}
-                      onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
-                      placeholder="e.g. 40.00"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Unit of Measure</label>
-                    <select 
-                      value={newProduct.unit}
-                      onChange={(e) => setNewProduct({ ...newProduct, unit: e.target.value })}
-                    >
-                      <option value="piece">piece</option>
-                      <option value="packet">packet</option>
-                      <option value="kg">kg</option>
-                      <option value="gm">gm</option>
-                      <option value="litre">litre</option>
-                    </select>
-                  </div>
-                </div>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Current Stock</label>
-                    <input 
-                      type="number" 
-                      step="0.1" 
-                      required 
-                      value={newProduct.stock_quantity}
-                      onChange={(e) => setNewProduct({ ...newProduct, stock_quantity: e.target.value })}
-                      placeholder="e.g. 100"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Reorder Limit</label>
-                    <input 
-                      type="number" 
-                      step="0.1" 
-                      required 
-                      value={newProduct.reorder_level}
-                      onChange={(e) => setNewProduct({ ...newProduct, reorder_level: e.target.value })}
-                      placeholder="e.g. 15"
-                    />
-                  </div>
-                </div>
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="donut-center">
+                <span className="donut-total">{totalOrders}</span>
+                <span className="donut-label">total</span>
               </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setIsProductModalOpen(false)}>
-                  Cancel
-                </button>
-                <button type="submit" className="btn btn-primary">
-                  {editingProduct ? 'Save Changes' : 'Create Product'}
-                </button>
+            </div>
+            <div className="donut-legend">
+              {statusData.map((d, i) => (
+                <div key={i} className="legend-item">
+                  <span className="legend-dot" style={{ background: d.color }} />
+                  <span className="legend-name">{d.name}</span>
+                  <span className="legend-value">{d.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ─── Row 2: Top Products Bar Chart + Inventory Health ─── */}
+      <div className="grid-2">
+        <div className="card">
+          <h3 className="card-title"><TrendingUp size={14} />Top Products</h3>
+          <div className="chart-container">
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={productData} layout="vertical" margin={{ top: 4, right: 8, left: 4, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="barGradient" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="#007cf0" />
+                    <stop offset="50%" stopColor="#7928ca" />
+                    <stop offset="100%" stopColor="#ff0080" />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#eaeaea" horizontal={false} />
+                <XAxis
+                  type="number"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 11, fill: '#999', fontFamily: "'JetBrains Mono', monospace" }}
+                  tickFormatter={v => `₹${v}`}
+                />
+                <YAxis
+                  type="category"
+                  dataKey="name"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 12, fill: '#171717', fontWeight: 500 }}
+                  width={48}
+                />
+                <Tooltip content={<ChartTooltip prefix="₹" />} />
+                <Bar
+                  dataKey="revenue"
+                  fill="url(#barGradient)"
+                  radius={[0, 4, 4, 0]}
+                  barSize={18}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="card">
+          <h3 className="card-title"><Boxes size={14} />Inventory Health</h3>
+          <div className="chart-container">
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={inventoryHealth} layout="vertical" margin={{ top: 4, right: 8, left: 4, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#eaeaea" horizontal={false} />
+                <XAxis
+                  type="number"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 11, fill: '#999', fontFamily: "'JetBrains Mono', monospace" }}
+                />
+                <YAxis
+                  type="category"
+                  dataKey="name"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 12, fill: '#171717', fontWeight: 500 }}
+                  width={48}
+                />
+                <Tooltip
+                  content={({ active, payload, label }) => {
+                    if (!active || !payload?.length) return null;
+                    return (
+                      <div className="chart-tooltip">
+                        <span className="chart-tooltip-label">{label}</span>
+                        {payload.map((p, i) => (
+                          <span key={i} className="chart-tooltip-value" style={{ color: p.color }}>
+                            {p.name === 'stock' ? 'Stock' : 'Reorder'}: {p.value}
+                          </span>
+                        ))}
+                      </div>
+                    );
+                  }}
+                />
+                <Bar dataKey="stock" fill="#171717" radius={[0, 4, 4, 0]} barSize={10} name="stock" />
+                <Bar dataKey="reorder" fill="#eaeaea" radius={[0, 4, 4, 0]} barSize={10} name="reorder" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      {/* ─── Low Stock Alerts ─── */}
+      {analytics.lowStockProducts.length > 0 && (
+        <div className="card">
+          <h3 className="card-title"><AlertTriangle size={14} />Low Stock Alerts</h3>
+          <div className="list">
+            {analytics.lowStockProducts.map(p => (
+              <div key={p.id} className="list-row alert-row">
+                <span className="fw-500" style={{ flex: 1 }}>{p.name}</span>
+                <span className="text-danger mono">{p.stock_quantity} {p.unit}</span>
+                <span className="muted">reorder at {p.reorder_level}</span>
+                <button className="btn-sm" onClick={() => openEditProduct(p)}>Restock</button>
               </div>
-            </form>
+            ))}
           </div>
         </div>
       )}
+    </>
+  );
+}
+
+function OrderModal({ order, onClose, onUpdateStatus }) {
+  const steps = ['pending', 'packaged', 'shipped', 'delivered'];
+  const currentIdx = steps.indexOf(order.status === 'cancelled' ? '' : order.status);
+  return (
+    <div className="overlay" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-head"><h2>Order #{order.id}</h2><button className="btn-icon" onClick={onClose}><X size={16} /></button></div>
+        <div className="modal-body">
+          <div className="info-row"><span className="muted">Customer</span><span>{order.customers?.name || 'Customer'}</span></div>
+          <div className="info-row"><span className="muted">Phone</span><span className="mono">{order.customer_phone}</span></div>
+          <div className="info-row"><span className="muted">Date</span><span>{new Date(order.created_at).toLocaleString()}</span></div>
+          <div className="info-row"><span className="muted">Total</span><span className="mono fw-500">{'\u20B9'}{Number(order.total_amount).toFixed(2)}</span></div>
+
+          {order.status !== 'cancelled' && currentIdx >= 0 && (
+            <div className="progress">
+              {steps.map((s, i) => (
+                <div key={s} className={`prog-step ${i <= currentIdx ? 'done' : ''}`}>
+                  <div className="prog-dot" />
+                  <span>{STATUS_CONFIG[s]?.label}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <h4 className="section-title">Items</h4>
+          <div className="items-list">
+            {order.order_items?.map((item, i) => (
+              <div key={i} className="item-row">
+                <span style={{ flex: 1 }}>{item.products?.name}</span>
+                <span className="muted">{item.quantity} {item.products?.unit}</span>
+                <span className="mono">{'\u20B9'}{(Number(item.unit_price) * Number(item.quantity)).toFixed(0)}</span>
+              </div>
+            ))}
+          </div>
+
+          <h4 className="section-title">Update Status</h4>
+          <div className="status-btns">
+            {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
+              <button key={key} className={`status-btn ${order.status === key ? 'current' : ''}`} disabled={order.status === key} onClick={() => onUpdateStatus(order.id, key)}>
+                <cfg.icon size={12} />{cfg.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProductModal({ product, newProduct, setNewProduct, onSubmit, onClose }) {
+  return (
+    <div className="overlay" onClick={onClose}>
+      <div className="modal sm" onClick={e => e.stopPropagation()}>
+        <div className="modal-head"><h2>{product ? 'Edit Product' : 'Add Product'}</h2><button className="btn-icon" onClick={onClose}><X size={16} /></button></div>
+        <form onSubmit={onSubmit}>
+          <div className="modal-body">
+            <label className="field"><span>Name</span><input required value={newProduct.name} onChange={e => setNewProduct({ ...newProduct, name: e.target.value })} placeholder="e.g. atta" /></label>
+            <div className="field-row">
+              <label className="field"><span>Price</span><input type="number" step="0.01" required value={newProduct.price} onChange={e => setNewProduct({ ...newProduct, price: e.target.value })} placeholder="45" /></label>
+              <label className="field"><span>Unit</span><select value={newProduct.unit} onChange={e => setNewProduct({ ...newProduct, unit: e.target.value })}><option value="piece">piece</option><option value="packet">packet</option><option value="kg">kg</option><option value="gm">gm</option><option value="litre">litre</option></select></label>
+            </div>
+            <div className="field-row">
+              <label className="field"><span>Stock</span><input type="number" step="0.1" required value={newProduct.stock_quantity} onChange={e => setNewProduct({ ...newProduct, stock_quantity: e.target.value })} placeholder="100" /></label>
+              <label className="field"><span>Reorder Level</span><input type="number" step="0.1" required value={newProduct.reorder_level} onChange={e => setNewProduct({ ...newProduct, reorder_level: e.target.value })} placeholder="20" /></label>
+            </div>
+          </div>
+          <div className="modal-foot">
+            <button type="button" className="btn-secondary" onClick={onClose}>Cancel</button>
+            <button type="submit" className="btn-primary">{product ? 'Save' : 'Create'}</button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
