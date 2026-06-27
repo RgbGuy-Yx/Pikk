@@ -101,6 +101,6 @@ cd node-service && node setup-db.js
 
 ## Demo
 
-<video src="WhatsApp%20Video%202026-06-26%20at%2010.56.18%20PM.mp4" controls width="600"></video>
+<video src="demo.mp4" controls width="600"></video>
 
 
