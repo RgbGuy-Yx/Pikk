@@ -39,6 +39,10 @@ Customer (WhatsApp)
 6. Customer receives order confirmation on WhatsApp
 7. Owner sees everything on the dashboard -- orders, inventory, revenue, low-stock alerts
 
+## Demo
+
+<video src="WhatsApp%20Video%202026-06-26%20at%2010.56.18%20PM.mp4" controls width="600"></video>
+
 ## Getting Started
 
 ### Prerequisites
