@@ -1,5 +1,4 @@
-# ShopBot
-
+# Pikk
 AI-powered WhatsApp storefront for kirana (grocery) stores in India. Customers order via WhatsApp text or Hindi voice notes. The system parses orders with AI, checks inventory, and sends confirmations back on WhatsApp. Store owners get a React dashboard to manage everything.
 
 ## Tech Stack
@@ -38,10 +37,6 @@ Customer (WhatsApp)
 5. Node checks inventory, creates the order, deducts stock
 6. Customer receives order confirmation on WhatsApp
 7. Owner sees everything on the dashboard -- orders, inventory, revenue, low-stock alerts
-
-## Demo
-
-<video src="WhatsApp%20Video%202026-06-26%20at%2010.56.18%20PM.mp4" controls width="600"></video>
 
 ## Getting Started
 
@@ -101,4 +96,11 @@ Paste `node-service/schema.sql` into your Supabase SQL Editor and run it, or:
 
 ```bash
 cd node-service && node setup-db.js
+
 ```
+
+## Demo
+
+<video src="WhatsApp%20Video%202026-06-26%20at%2010.56.18%20PM.mp4" controls width="600"></video>
+
+
