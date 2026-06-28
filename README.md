@@ -1,3 +1,9 @@
+<img width="1869" height="868" alt="image 2" src="https://github.com/user-attachments/assets/19ada008-c20c-45ad-9850-6dc273f4b4be" />
+<img width="1870" height="875" alt="image1" src="https://github.com/user-attachments/assets/e4c48762-f6ef-4a7b-a947-00fb8eb7dfab" />
+
+
+https://github.com/user-attachments/assets/188e5043-4047-4f3d-9afd-39a60ef67714
+
 # Pikk
 AI-powered WhatsApp storefront for kirana (grocery) stores in India. Customers order via WhatsApp text or Hindi voice notes. The system parses orders with AI, checks inventory, and sends confirmations back on WhatsApp. Store owners get a React dashboard to manage everything.
 
