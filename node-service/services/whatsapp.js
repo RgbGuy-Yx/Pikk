@@ -216,11 +216,97 @@ async function downloadWhatsAppMedia(mediaId) {
   }
 }
 
+/**
+ * Sends a local image file as a WhatsApp image message.
+ * Uploads the file to WhatsApp's media endpoint first, then sends using the media ID.
+ *
+ * @param {string} to - Recipient phone number.
+ * @param {string} filePath - Absolute path to the image file on disk.
+ * @param {string} [caption] - Optional caption for the image.
+ * @returns {Promise<Object>} - Response status object.
+ */
+async function sendWhatsAppImageFromFile(to, filePath, caption) {
+  const fs = require('fs');
+  const FormData = require('form-data');
+
+  if (!fs.existsSync(filePath)) {
+    console.error(`[WhatsApp] Image file not found: ${filePath}`);
+    return { ok: false, error: 'Image file not found' };
+  }
+
+  const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
+  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+
+  // Mock mode
+  if (!accessToken || !phoneNumberId) {
+    console.log('\n========================================');
+    console.log('[WhatsApp MOCK Image Send from File]');
+    console.log(`To:      ${to}`);
+    console.log(`File:    ${filePath}`);
+    console.log(`Caption: ${caption || ''}`);
+    console.log('========================================\n');
+    return { ok: true, mocked: true, recipient: to, filePath };
+  }
+
+  try {
+    // Step 1: Upload image to WhatsApp media endpoint
+    console.log(`[WhatsApp] Uploading image to media endpoint: ${filePath}`);
+    const fileBuffer = fs.readFileSync(filePath);
+    const filename = require('path').basename(filePath);
+
+    const form = new FormData();
+    form.append('file', fileBuffer, {
+      filename,
+      contentType: 'image/jpeg',
+    });
+    form.append('messaging_product', 'whatsapp');
+    form.append('type', 'image/jpeg');
+
+    const uploadResponse = await axios.post(
+      `https://graph.facebook.com/v19.0/${phoneNumberId}/media`,
+      form,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          ...form.getHeaders(),
+        },
+        timeout: 30000,
+      }
+    );
+
+    const mediaId = uploadResponse.data?.id;
+    if (!mediaId) {
+      throw new Error('Media upload did not return an ID');
+    }
+    console.log(`[WhatsApp] Image uploaded. Media ID: ${mediaId}`);
+
+    // Step 2: Send image using the media ID
+    const payload = {
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to,
+      type: 'image',
+      image: {
+        id: mediaId,
+        caption: caption || '',
+      },
+    };
+
+    const response = await whatsappClient.post('/messages', payload);
+    console.log(`[WhatsApp] QR image sent to ${to}. Message ID: ${response.data?.messages?.[0]?.id}`);
+    return { ok: true, mocked: false, messageId: response.data?.messages?.[0]?.id };
+  } catch (error) {
+    console.error(`[WhatsApp] Failed to send image to ${to}:`, error.response?.data || error.message);
+    return { ok: false, error: error.response?.data || error.message };
+  }
+}
+
 module.exports = {
   createWhatsAppClient,
   sendWhatsAppMessage,
   sendWhatsAppDocument,
   sendWhatsAppImage,
+  sendWhatsAppImageFromFile,
   notifyOwner,
   downloadWhatsAppMedia
 };

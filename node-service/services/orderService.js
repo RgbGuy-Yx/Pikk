@@ -1,6 +1,7 @@
 const { createSupabaseClient } = require('./supabase');
-const { sendWhatsAppMessage } = require('./whatsapp');
+const { sendWhatsAppMessage, sendWhatsAppImageFromFile } = require('./whatsapp');
 const { addNotification } = require('./notificationStore');
+const path = require('path');
 
 const supabase = createSupabaseClient();
 
@@ -235,6 +236,11 @@ ${itemLinesText}
 Ham aapko notify karenge jab order delivery ke liye nikalega! 🛵`;
 
       await sendWhatsAppMessage(cleanPhone, receiptMessage);
+
+      // Step H: Send QR code for payment
+      const qrPath = path.join(__dirname, '..', '..', 'python-service', 'assets', 'qr_image.png.jpeg');
+      const qrCaption = `Scan to pay ₹${totalAmount.toFixed(2)} for Order #${order.id}`;
+      await sendWhatsAppImageFromFile(cleanPhone, qrPath, qrCaption);
 
       return {
         success: true,
